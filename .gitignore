@@ -1,0 +1,50 @@
+# dependencies
+node_modules
+.pnp
+.pnp.js
+
+# next
+.next/
+out/
+build/
+dist/
+
+# env
+.env
+.env.local
+.env*.local
+
+# logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+
+# coverage
+coverage/
+
+# editor
+.vscode/
+.idea/
+*.swp
+.DS_Store
+Thumbs.db
+
+# typescript
+*.tsbuildinfo
+next-env.d.ts
+
+# supabase
+supabase/.branches
+supabase/.temp
+supabase/seed.local.sql
+
+# playwright
+test-results/
+playwright-report/
+playwright/.cache/
+
+# misc
+.turbo
+.vercel
+.claude/
