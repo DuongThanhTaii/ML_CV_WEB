@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
+import { ThemeToggle } from '@/components/theme-toggle'
 import { Brain, Code2, GraduationCap, Sparkles } from 'lucide-react'
 
 export default function LandingPage() {
@@ -17,6 +18,7 @@ export default function LandingPage() {
           <Link href="/playground" className="text-muted-foreground hover:text-foreground">
             Playground
           </Link>
+          <ThemeToggle />
           <Button asChild size="sm">
             <Link href="/login">Đăng nhập</Link>
           </Button>
