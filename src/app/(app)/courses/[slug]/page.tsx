@@ -132,13 +132,22 @@ export default async function CourseDetailPage({ params }: { params: Promise<{ s
                           {lesson.has_quiz && (
                             <span>· Quiz cần đạt {lesson.pass_threshold}%</span>
                           )}
+                          {lesson.has_gating_assignment && (
+                            <span
+                              className={
+                                lesson.assignments_passed ? 'text-green-600' : 'text-amber-600'
+                              }
+                            >
+                              · Có bài tập bắt buộc
+                            </span>
+                          )}
                           {lesson.best_quiz_score !== null && (
                             <span
                               className={
                                 lesson.passed ? 'text-green-600' : 'text-amber-600'
                               }
                             >
-                              · Điểm cao nhất: {lesson.best_quiz_score}%
+                              · Điểm quiz: {lesson.best_quiz_score}%
                             </span>
                           )}
                         </div>

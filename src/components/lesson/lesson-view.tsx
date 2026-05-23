@@ -16,6 +16,7 @@ import { LessonVideoPlayer } from '@/components/lesson/lesson-video-player'
 import { PdfViewer } from '@/components/lesson/pdf-viewer'
 import type { NotebookCell } from '@/types/notebook'
 import type { StudentQuizQuestion } from '@/services/quiz.service'
+import type { GatingAssignmentStatus } from '@/lib/lessons/assignment-gating'
 
 interface LessonProgress {
   best_quiz_score: number | null
@@ -46,6 +47,7 @@ interface Props {
   quizQuestions: StudentQuizQuestion[]
   progress: LessonProgress | null
   pdfSignedUrl: string | null
+  gatingAssignments: GatingAssignmentStatus[]
 }
 
 export function LessonView({
@@ -57,6 +59,7 @@ export function LessonView({
   quizQuestions,
   progress,
   pdfSignedUrl,
+  gatingAssignments,
 }: Props) {
   const router = useRouter()
   const starterCells: NotebookCell[] =
@@ -77,7 +80,8 @@ export function LessonView({
   const [videoPct, setVideoPct] = useState(progress?.video_watched_pct ?? 0)
   const quizPassed = progress?.passed ?? false
   const videoOk = !hasVideo || !lesson.video_required || videoPct >= 90
-  const canGoNext = (!hasQuiz || quizPassed) && videoOk
+  const assignmentsOk = gatingAssignments.every((a) => a.passed)
+  const canGoNext = (!hasQuiz || quizPassed) && videoOk && assignmentsOk
 
   const defaultTab = useMemo(() => {
     if (hasVideo) return 'video'
@@ -118,6 +122,19 @@ export function LessonView({
               Video: {videoOk ? '✓ đã xem' : `${videoPct}% / 90%`}
             </span>
           )}
+          {gatingAssignments.map((g) => (
+            <span
+              key={g.assignment_id}
+              className={`rounded-md px-3 py-1.5 font-medium ${
+                g.passed
+                  ? 'bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-400'
+                  : 'bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-400'
+              }`}
+              title={g.title}
+            >
+              🔒 Bài tập: {g.passed ? `✓ ${g.best_pct}%` : `${g.best_pct}% / ${g.pass_threshold_pct}%`}
+            </span>
+          ))}
         </div>
       </header>
 
@@ -217,11 +234,7 @@ export function LessonView({
             </Button>
             {!canGoNext && (
               <span className="text-xs text-muted-foreground">
-                {hasQuiz && !quizPassed && hasVideo && !videoOk
-                  ? 'Cần hoàn thành quiz và video'
-                  : hasQuiz && !quizPassed
-                    ? 'Hoàn thành quiz để mở khóa'
-                    : 'Xem hết video để mở khóa'}
+                {missingRequirements(hasQuiz && !quizPassed, hasVideo && !videoOk, !assignmentsOk)}
               </span>
             )}
           </div>
@@ -231,6 +244,15 @@ export function LessonView({
       <FloatingTutor lessonId={lesson.id} />
     </div>
   )
+}
+
+function missingRequirements(needQuiz: boolean, needVideo: boolean, needAssignment: boolean): string {
+  const parts: string[] = []
+  if (needQuiz) parts.push('quiz')
+  if (needVideo) parts.push('video')
+  if (needAssignment) parts.push('bài tập')
+  if (parts.length === 0) return ''
+  return `Hoàn thành ${parts.join(' + ')} để mở khóa`
 }
 
 function FloatingTutor({ lessonId }: { lessonId: string }) {

@@ -29,6 +29,12 @@ export function AssignmentEditor({ assignment }: Props) {
   const [requiresManualReview, setRequiresManualReview] = useState(
     assignment.requires_manual_review ?? false,
   )
+  const [gatesProgression, setGatesProgression] = useState(
+    assignment.gates_progression ?? false,
+  )
+  const [passThresholdPct, setPassThresholdPct] = useState(
+    assignment.pass_threshold_pct ?? 50,
+  )
   const [saving, setSaving] = useState(false)
   const { toast } = useToast()
 
@@ -67,6 +73,8 @@ export function AssignmentEditor({ assignment }: Props) {
         time_limit_seconds: timeLimit,
         is_published: isPublished,
         requires_manual_review: requiresManualReview,
+        gates_progression: gatesProgression,
+        pass_threshold_pct: passThresholdPct,
       })
       .eq('id', assignment.id)
 
@@ -178,6 +186,37 @@ export function AssignmentEditor({ assignment }: Props) {
           />
           Bắt buộc giáo viên review thủ công (điểm tự động chỉ là gợi ý)
         </label>
+      </div>
+
+      <div className="rounded-md border border-amber-300 bg-amber-50 p-3 dark:border-amber-900 dark:bg-amber-950/30">
+        <label className="flex items-center gap-2 text-sm font-medium">
+          <input
+            type="checkbox"
+            checked={gatesProgression}
+            onChange={(e) => setGatesProgression(e.target.checked)}
+            className="size-4"
+          />
+          🔒 Bắt buộc pass bài này mới mở khóa bài kế tiếp
+        </label>
+        {gatesProgression && (
+          <div className="mt-3 flex items-end gap-3">
+            <div className="space-y-1.5">
+              <Label className="text-xs">Điểm pass (% của max score)</Label>
+              <Input
+                type="number"
+                min={0}
+                max={100}
+                value={passThresholdPct}
+                onChange={(e) => setPassThresholdPct(Number(e.target.value))}
+                className="w-28"
+              />
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Học sinh phải đạt ≥{passThresholdPct}% của {maxScore} điểm = {(maxScore * passThresholdPct / 100).toFixed(1)} điểm.
+              {requiresManualReview && ' Nhớ chấm review nhanh để không chặn học sinh.'}
+            </p>
+          </div>
+        )}
       </div>
 
       <Button onClick={handleSave} disabled={saving}>

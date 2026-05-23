@@ -117,8 +117,10 @@ export type LessonWithProgress = {
   has_video: boolean
   has_pdf: boolean
   video_required: boolean
+  has_gating_assignment: boolean
   best_quiz_score: number | null
   video_watched_pct: number
+  assignments_passed: boolean
   passed: boolean
   locked: boolean
 }
@@ -136,6 +138,8 @@ type Assignment = {
   metric_config: Json | null
   io_spec: Json | null
   requires_manual_review: boolean
+  gates_progression: boolean
+  pass_threshold_pct: number
   max_score: number
   max_attempts: number
   time_limit_seconds: number
@@ -265,6 +269,7 @@ type Experiment = {
 }
 
 type AssignmentsPublicView = Omit<Assignment, 'hidden_tests_encrypted' | 'created_at'>
+// Same as Assignment minus hidden_tests + created_at (both stripped at the view level)
 type QuizzesPublicView = Omit<Quiz, 'correct_answer' | 'explanation'>
 
 export interface Database {
@@ -297,6 +302,8 @@ export interface Database {
     Functions: {
       can_access_lesson: { Args: { target_lesson_id: string }; Returns: boolean }
       list_lessons_with_progress: { Args: { target_course_id: string }; Returns: LessonWithProgress[] }
+      best_assignment_pct: { Args: { p_student_id: string; p_assignment_id: string }; Returns: number }
+      lesson_assignments_passed: { Args: { p_student_id: string; p_lesson_id: string }; Returns: boolean }
     }
     Enums: {
       user_role: 'student' | 'teacher' | 'admin'

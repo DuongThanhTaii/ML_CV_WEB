@@ -3,6 +3,7 @@ import { lessonService } from '@/services/lesson.service'
 import { quizService } from '@/services/quiz.service'
 import { lessonProgressService } from '@/services/lesson-progress.service'
 import { canAccessLesson } from '@/lib/lessons/gating'
+import { loadGatingAssignmentsForLesson } from '@/lib/lessons/assignment-gating'
 import { createSignedUrl } from '@/lib/storage/signed-urls'
 import { notFound, redirect } from 'next/navigation'
 import { LessonView } from '@/components/lesson/lesson-view'
@@ -30,7 +31,13 @@ export default async function LessonPage({ params }: Props) {
 
   await lessonProgressService.markViewed(supabase, user.id, lessonId)
 
-  const [{ data: prevNext }, { data: quizQuestions }, progress, pdfSignedUrl] = await Promise.all([
+  const [
+    { data: prevNext },
+    { data: quizQuestions },
+    progress,
+    pdfSignedUrl,
+    gatingAssignments,
+  ] = await Promise.all([
     supabase
       .from('lessons')
       .select('id, order_index, title')
@@ -41,6 +48,7 @@ export default async function LessonPage({ params }: Props) {
     data.lesson.pdf_storage_path
       ? createSignedUrl(supabase, 'lesson-pdfs', data.lesson.pdf_storage_path)
       : Promise.resolve(null),
+    loadGatingAssignmentsForLesson(supabase, user.id, lessonId),
   ])
 
   const idx = prevNext?.findIndex((l) => l.id === lessonId) ?? -1
@@ -58,6 +66,7 @@ export default async function LessonPage({ params }: Props) {
       quizQuestions={quizQuestions}
       progress={progress}
       pdfSignedUrl={pdfSignedUrl}
+      gatingAssignments={gatingAssignments}
     />
   )
 }
