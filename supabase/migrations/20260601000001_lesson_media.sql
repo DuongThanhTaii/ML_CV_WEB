@@ -95,8 +95,12 @@ end;
 $$;
 
 -- ---------------------------------------------------------------------
--- Extend list_lessons_with_progress to expose video info + new completion rule
+-- Extend list_lessons_with_progress to expose video info + new completion rule.
+-- DROP required because we add 4 new return columns; CREATE OR REPLACE alone
+-- fails with "cannot change return type of existing function" (42P13).
 -- ---------------------------------------------------------------------
+drop function if exists public.list_lessons_with_progress(uuid);
+
 create or replace function public.list_lessons_with_progress(target_course_id uuid)
 returns table (
   id uuid,
