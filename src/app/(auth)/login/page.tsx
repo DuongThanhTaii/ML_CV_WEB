@@ -1,6 +1,7 @@
 import { LoginForm } from '@/components/auth/login-form'
 import { Brain } from 'lucide-react'
 import Link from 'next/link'
+import { Suspense } from 'react'
 
 export default function LoginPage() {
   return (
@@ -11,10 +12,10 @@ export default function LoginPage() {
           <span>ml-cv-learn</span>
         </Link>
         <h1 className="text-2xl font-bold">Đăng nhập</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Nhập email để nhận magic link, không cần mật khẩu.
-        </p>
-        <LoginForm className="mt-6" />
+        <p className="mt-1 text-sm text-muted-foreground">Tiếp tục hành trình học ML/CV của bạn.</p>
+        <Suspense fallback={<div className="mt-6 h-72 animate-pulse rounded-md bg-muted/30" />}>
+          <LoginForm className="mt-6" />
+        </Suspense>
       </div>
     </main>
   )
