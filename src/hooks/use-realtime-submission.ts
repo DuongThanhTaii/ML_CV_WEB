@@ -57,6 +57,19 @@ export function useRealtimeSubmission(submissionId: string | null) {
           setState((s) => ({ ...s, result: payload.new as GradingResult, loading: false }))
         },
       )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'grading_results',
+          filter: `submission_id=eq.${submissionId}`,
+        },
+        (payload) => {
+          // Teacher override / comment update
+          setState((s) => ({ ...s, result: payload.new as GradingResult }))
+        },
+      )
       .subscribe()
 
     return () => {

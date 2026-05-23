@@ -11,8 +11,10 @@ import { runVisibleTests } from '@/lib/grading/client-runner'
 import { useToast } from '@/hooks/use-toast'
 import { TestResultList } from './test-result-list'
 import { GradingResultView } from './grading-result'
+import { AssignmentInfoPanel } from './assignment-info-panel'
 import { Loader2, Play, Send } from 'lucide-react'
 import type { TestResult } from '@/lib/grading/types'
+import type { IoSpec } from '@/components/teacher/assignment-io-spec-editor'
 import { useRealtimeSubmission } from '@/hooks/use-realtime-submission'
 
 const MonacoEditor = dynamic(() => import('@monaco-editor/react'), {
@@ -80,6 +82,11 @@ export function AssignmentPanel({ assignment }: Props) {
           <h3 className="text-lg font-semibold">{assignment.title}</h3>
           <Badge variant="outline">{assignment.evaluation_type}</Badge>
           <Badge variant="secondary">{assignment.max_score} điểm</Badge>
+          {assignment.requires_manual_review && (
+            <Badge variant="outline" className="text-amber-700 dark:text-amber-400">
+              Cần GV review
+            </Badge>
+          )}
         </div>
         {assignment.description_mdx && (
           <div className="prose prose-sm mt-2 max-w-none text-muted-foreground dark:prose-invert">
@@ -87,6 +94,11 @@ export function AssignmentPanel({ assignment }: Props) {
           </div>
         )}
       </header>
+
+      <AssignmentInfoPanel
+        assignmentId={assignment.id}
+        ioSpec={(assignment.io_spec as IoSpec | null) ?? null}
+      />
 
       <div className="border-b">
         <MonacoEditor

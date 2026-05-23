@@ -26,6 +26,9 @@ export function AssignmentEditor({ assignment }: Props) {
   const [maxAttempts, setMaxAttempts] = useState(assignment.max_attempts ?? 10)
   const [timeLimit, setTimeLimit] = useState(assignment.time_limit_seconds ?? 30)
   const [isPublished, setIsPublished] = useState(assignment.is_published)
+  const [requiresManualReview, setRequiresManualReview] = useState(
+    assignment.requires_manual_review ?? false,
+  )
   const [saving, setSaving] = useState(false)
   const { toast } = useToast()
 
@@ -63,6 +66,7 @@ export function AssignmentEditor({ assignment }: Props) {
         max_attempts: maxAttempts,
         time_limit_seconds: timeLimit,
         is_published: isPublished,
+        requires_manual_review: requiresManualReview,
       })
       .eq('id', assignment.id)
 
@@ -155,15 +159,26 @@ export function AssignmentEditor({ assignment }: Props) {
         </div>
       </div>
 
-      <label className="flex items-center gap-2 text-sm">
-        <input
-          type="checkbox"
-          checked={isPublished}
-          onChange={(e) => setIsPublished(e.target.checked)}
-          className="size-4"
-        />
-        Publish (sinh viên thấy & nộp được)
-      </label>
+      <div className="space-y-2">
+        <label className="flex items-center gap-2 text-sm">
+          <input
+            type="checkbox"
+            checked={isPublished}
+            onChange={(e) => setIsPublished(e.target.checked)}
+            className="size-4"
+          />
+          Publish (sinh viên thấy & nộp được)
+        </label>
+        <label className="flex items-center gap-2 text-sm">
+          <input
+            type="checkbox"
+            checked={requiresManualReview}
+            onChange={(e) => setRequiresManualReview(e.target.checked)}
+            className="size-4"
+          />
+          Bắt buộc giáo viên review thủ công (điểm tự động chỉ là gợi ý)
+        </label>
+      </div>
 
       <Button onClick={handleSave} disabled={saving}>
         {saving && <Loader2 className="size-4 animate-spin" />}

@@ -1,6 +1,7 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
+import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
@@ -10,17 +11,54 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Notebook } from '@/components/notebook/notebook'
 import { AssignmentPanel } from '@/components/grading/assignment-panel'
 import { TutorChat } from '@/components/ai/tutor-chat'
+import { LessonQuiz } from '@/components/lesson/lesson-quiz'
+import { LessonVideoPlayer } from '@/components/lesson/lesson-video-player'
+import { PdfViewer } from '@/components/lesson/pdf-viewer'
 import type { NotebookCell } from '@/types/notebook'
+import type { StudentQuizQuestion } from '@/services/quiz.service'
+
+interface LessonProgress {
+  best_quiz_score: number | null
+  passed: boolean
+  video_watched_pct: number
+  video_unique_seconds_bitmap: string | null
+}
+
+interface Lesson {
+  id: string
+  title: string
+  content_mdx: string
+  pass_threshold: number
+  starter_notebook_json: unknown
+  pdf_storage_path: string | null
+  video_youtube_id: string | null
+  video_duration_seconds: number | null
+  video_title: string | null
+  video_required: boolean
+}
 
 interface Props {
   courseSlug: string
-  lesson: any
-  assignments: any[]
+  lesson: Lesson
+  assignments: unknown[]
   prev: { id: string; title: string } | null
   next: { id: string; title: string } | null
+  quizQuestions: StudentQuizQuestion[]
+  progress: LessonProgress | null
+  pdfSignedUrl: string | null
 }
 
-export function LessonView({ courseSlug, lesson, assignments, prev, next }: Props) {
+export function LessonView({
+  courseSlug,
+  lesson,
+  assignments,
+  prev,
+  next,
+  quizQuestions,
+  progress,
+  pdfSignedUrl,
+}: Props) {
+  const router = useRouter()
   const starterCells: NotebookCell[] =
     (lesson.starter_notebook_json as NotebookCell[] | null) ?? [
       {
@@ -31,6 +69,22 @@ export function LessonView({ courseSlug, lesson, assignments, prev, next }: Prop
       },
     ]
 
+  const hasVideo = !!lesson.video_youtube_id
+  const hasPdf = !!pdfSignedUrl
+  const hasQuiz = quizQuestions.length > 0
+  const hasAssignment = assignments.length > 0
+
+  const [videoPct, setVideoPct] = useState(progress?.video_watched_pct ?? 0)
+  const quizPassed = progress?.passed ?? false
+  const videoOk = !hasVideo || !lesson.video_required || videoPct >= 90
+  const canGoNext = (!hasQuiz || quizPassed) && videoOk
+
+  const defaultTab = useMemo(() => {
+    if (hasVideo) return 'video'
+    if (hasPdf) return 'pdf'
+    return 'notes'
+  }, [hasVideo, hasPdf])
+
   return (
     <div className="mx-auto max-w-6xl space-y-6">
       <nav className="text-sm">
@@ -39,20 +93,73 @@ export function LessonView({ courseSlug, lesson, assignments, prev, next }: Prop
         </Link>
       </nav>
 
-      <header>
+      <header className="flex flex-wrap items-start justify-between gap-3">
         <h1 className="text-3xl font-bold tracking-tight">{lesson.title}</h1>
+        <div className="flex flex-wrap gap-2 text-xs">
+          {hasQuiz && (
+            <span
+              className={`rounded-md px-3 py-1.5 font-medium ${
+                quizPassed
+                  ? 'bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-400'
+                  : 'bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-400'
+              }`}
+            >
+              Quiz: {quizPassed ? `✓ ${progress?.best_quiz_score}%` : `cần ≥${lesson.pass_threshold}%`}
+            </span>
+          )}
+          {hasVideo && lesson.video_required && (
+            <span
+              className={`rounded-md px-3 py-1.5 font-medium ${
+                videoOk
+                  ? 'bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-400'
+                  : 'bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-400'
+              }`}
+            >
+              Video: {videoOk ? '✓ đã xem' : `${videoPct}% / 90%`}
+            </span>
+          )}
+        </div>
       </header>
 
-      <Tabs defaultValue="lesson" className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="lesson">📖 Bài học</TabsTrigger>
+      <Tabs defaultValue={defaultTab} className="w-full">
+        <TabsList className="flex w-full flex-wrap">
+          {hasVideo && <TabsTrigger value="video">🎬 Video</TabsTrigger>}
+          {hasPdf && <TabsTrigger value="pdf">📄 Slide PDF</TabsTrigger>}
+          <TabsTrigger value="notes">📖 Ghi chú</TabsTrigger>
           <TabsTrigger value="notebook">🧪 Notebook</TabsTrigger>
-          <TabsTrigger value="assignment">
-            ✅ Bài tập{assignments.length > 0 && ` (${assignments.length})`}
-          </TabsTrigger>
+          {hasAssignment && (
+            <TabsTrigger value="assignment">✅ Bài tập ({assignments.length})</TabsTrigger>
+          )}
+          {hasQuiz && <TabsTrigger value="quiz">🎯 Quiz ({quizQuestions.length})</TabsTrigger>}
         </TabsList>
 
-        <TabsContent value="lesson" className="prose prose-sm max-w-none py-4 dark:prose-invert lg:prose-base">
+        {hasVideo && (
+          <TabsContent value="video" className="py-4">
+            <LessonVideoPlayer
+              lessonId={lesson.id}
+              youtubeId={lesson.video_youtube_id!}
+              durationSeconds={lesson.video_duration_seconds}
+              initialBitmapBase64={progress?.video_unique_seconds_bitmap ?? null}
+              initialWatchedPct={progress?.video_watched_pct ?? 0}
+              required={lesson.video_required}
+              onPctChange={setVideoPct}
+            />
+            {lesson.video_title && (
+              <p className="mt-2 text-sm text-muted-foreground">{lesson.video_title}</p>
+            )}
+          </TabsContent>
+        )}
+
+        {hasPdf && (
+          <TabsContent value="pdf" className="py-4">
+            <PdfViewer signedUrl={pdfSignedUrl!} filename={`${lesson.title}.pdf`} />
+          </TabsContent>
+        )}
+
+        <TabsContent
+          value="notes"
+          className="prose prose-sm max-w-none py-4 dark:prose-invert lg:prose-base"
+        >
           <ReactMarkdown remarkPlugins={[remarkGfm]}>{lesson.content_mdx}</ReactMarkdown>
         </TabsContent>
 
@@ -60,19 +167,29 @@ export function LessonView({ courseSlug, lesson, assignments, prev, next }: Prop
           <Notebook initialCells={starterCells} />
         </TabsContent>
 
-        <TabsContent value="assignment" className="py-4">
-          {assignments.length === 0 ? (
-            <div className="rounded-md border border-dashed p-8 text-center text-sm text-muted-foreground">
-              Bài học này chưa có bài tập.
-            </div>
-          ) : (
+        {hasAssignment && (
+          <TabsContent value="assignment" className="py-4">
             <div className="space-y-6">
-              {assignments.map((a) => (
+              {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+              {assignments.map((a: any) => (
                 <AssignmentPanel key={a.id} assignment={a} />
               ))}
             </div>
-          )}
-        </TabsContent>
+          </TabsContent>
+        )}
+
+        {hasQuiz && (
+          <TabsContent value="quiz" className="py-4">
+            <LessonQuiz
+              lessonId={lesson.id}
+              questions={quizQuestions}
+              passThreshold={lesson.pass_threshold}
+              bestScore={progress?.best_quiz_score ?? null}
+              alreadyPassed={quizPassed}
+              onPass={() => router.refresh()}
+            />
+          </TabsContent>
+        )}
       </Tabs>
 
       <nav className="flex items-center justify-between border-t pt-6">
@@ -86,11 +203,28 @@ export function LessonView({ courseSlug, lesson, assignments, prev, next }: Prop
           <div />
         )}
         {next && (
-          <Button asChild>
-            <Link href={`/courses/${courseSlug}/lessons/${next.id}`}>
-              {next.title} <ChevronRight className="size-4" />
-            </Link>
-          </Button>
+          <div className="flex flex-col items-end gap-1">
+            <Button asChild={canGoNext} disabled={!canGoNext}>
+              {canGoNext ? (
+                <Link href={`/courses/${courseSlug}/lessons/${next.id}`}>
+                  {next.title} <ChevronRight className="size-4" />
+                </Link>
+              ) : (
+                <span>
+                  🔒 {next.title} <ChevronRight className="size-4" />
+                </span>
+              )}
+            </Button>
+            {!canGoNext && (
+              <span className="text-xs text-muted-foreground">
+                {hasQuiz && !quizPassed && hasVideo && !videoOk
+                  ? 'Cần hoàn thành quiz và video'
+                  : hasQuiz && !quizPassed
+                    ? 'Hoàn thành quiz để mở khóa'
+                    : 'Xem hết video để mở khóa'}
+              </span>
+            )}
+          </div>
         )}
       </nav>
 

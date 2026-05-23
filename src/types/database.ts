@@ -42,13 +42,85 @@ type Enrollment = {
 type Lesson = {
   id: string
   course_id: string
+  module_id: string | null
   order_index: number
   title: string
   content_mdx: string
   starter_notebook_json: Json | null
   estimated_minutes: number | null
   is_free_preview: boolean
+  pass_threshold: number
+  pdf_storage_path: string | null
+  pdf_size_bytes: number | null
+  video_youtube_id: string | null
+  video_duration_seconds: number | null
+  video_title: string | null
+  video_required: boolean
   created_at: string
+}
+
+type Module = {
+  id: string
+  course_id: string
+  order_index: number
+  title: string
+  description: string | null
+  created_at: string
+}
+
+type Quiz = {
+  id: string
+  lesson_id: string | null
+  question_type: 'mcq' | 'code_complete' | 'true_false'
+  question: string
+  options: Json | null
+  correct_answer: string
+  explanation: string | null
+  difficulty: number | null
+  order_index: number
+  points: number
+}
+
+type QuizAttempt = {
+  id: string
+  quiz_id: string
+  student_id: string
+  answer: string | null
+  is_correct: boolean | null
+  attempted_at: string
+}
+
+type LessonProgress = {
+  id: string
+  student_id: string
+  lesson_id: string
+  best_quiz_score: number | null
+  quiz_attempts_count: number
+  passed: boolean
+  first_viewed_at: string
+  passed_at: string | null
+  updated_at: string
+  video_watched_pct: number
+  video_watched_seconds: number
+  video_unique_seconds_bitmap: string | null
+}
+
+export type LessonWithProgress = {
+  id: string
+  module_id: string | null
+  order_index: number
+  title: string
+  estimated_minutes: number | null
+  is_free_preview: boolean
+  pass_threshold: number
+  has_quiz: boolean
+  has_video: boolean
+  has_pdf: boolean
+  video_required: boolean
+  best_quiz_score: number | null
+  video_watched_pct: number
+  passed: boolean
+  locked: boolean
 }
 
 type Assignment = {
@@ -62,11 +134,33 @@ type Assignment = {
   hidden_tests_encrypted: string | null
   evaluation_type: 'unittest' | 'ml_metric' | 'cv_output' | 'mixed'
   metric_config: Json | null
+  io_spec: Json | null
+  requires_manual_review: boolean
   max_score: number
   max_attempts: number
   time_limit_seconds: number
   due_at: string | null
   is_published: boolean
+  created_at: string
+}
+
+type AssignmentDataset = {
+  assignment_id: string
+  dataset_id: string
+  role: 'train' | 'test' | 'validation' | 'reference'
+  created_at: string
+}
+
+type ImageAnnotation = {
+  id: string
+  dataset_id: string
+  image_path: string
+  shape_type: 'bbox' | 'polygon' | 'point'
+  coordinates: Json
+  label: string
+  color: string | null
+  created_by: string | null
+  is_ground_truth: boolean
   created_at: string
 }
 
@@ -97,6 +191,10 @@ type GradingResult = {
   stderr: string | null
   graded_at: string
   graded_by: string
+  teacher_override_score: number | null
+  teacher_comment: string | null
+  reviewed_by: string | null
+  reviewed_at: string | null
 }
 
 type AIFeedback = {
@@ -167,6 +265,7 @@ type Experiment = {
 }
 
 type AssignmentsPublicView = Omit<Assignment, 'hidden_tests_encrypted' | 'created_at'>
+type QuizzesPublicView = Omit<Quiz, 'correct_answer' | 'explanation'>
 
 export interface Database {
   public: {
@@ -184,11 +283,21 @@ export interface Database {
       datasets: { Row: Dataset; Insert: Partial<Dataset> & { owner_id: string; name: string; dataset_type: Dataset['dataset_type']; storage_path: string }; Update: Partial<Dataset> }
       notebooks: { Row: Notebook; Insert: Partial<Notebook> & { owner_id: string; cells_json: Json }; Update: Partial<Notebook> }
       experiments: { Row: Experiment; Insert: Partial<Experiment> & { owner_id: string }; Update: Partial<Experiment> }
+      modules: { Row: Module; Insert: Partial<Module> & { course_id: string; order_index: number; title: string }; Update: Partial<Module> }
+      quizzes: { Row: Quiz; Insert: Partial<Quiz> & { question_type: Quiz['question_type']; question: string; correct_answer: string }; Update: Partial<Quiz> }
+      quiz_attempts: { Row: QuizAttempt; Insert: { quiz_id: string; student_id: string; answer?: string | null; is_correct?: boolean | null }; Update: Partial<QuizAttempt> }
+      lesson_progress: { Row: LessonProgress; Insert: Partial<LessonProgress> & { student_id: string; lesson_id: string }; Update: Partial<LessonProgress> }
+      assignment_datasets: { Row: AssignmentDataset; Insert: { assignment_id: string; dataset_id: string; role: AssignmentDataset['role'] }; Update: Partial<AssignmentDataset> }
+      image_annotations: { Row: ImageAnnotation; Insert: Partial<ImageAnnotation> & { dataset_id: string; image_path: string; shape_type: ImageAnnotation['shape_type']; coordinates: Json; label: string }; Update: Partial<ImageAnnotation> }
     }
     Views: {
       assignments_public: { Row: AssignmentsPublicView; Insert: never; Update: never }
+      quizzes_public: { Row: QuizzesPublicView; Insert: never; Update: never }
     }
-    Functions: Record<string, never>
+    Functions: {
+      can_access_lesson: { Args: { target_lesson_id: string }; Returns: boolean }
+      list_lessons_with_progress: { Args: { target_course_id: string }; Returns: LessonWithProgress[] }
+    }
     Enums: {
       user_role: 'student' | 'teacher' | 'admin'
       submission_status: 'pending' | 'running' | 'graded' | 'error' | 'manual_review'

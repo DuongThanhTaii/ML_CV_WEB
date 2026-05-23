@@ -25,13 +25,28 @@ interface Lesson {
   title: string
   order_index: number
   estimated_minutes: number | null
+  module_id: string | null
 }
 
-export function LessonList({ courseId, lessons }: { courseId: string; lessons: Lesson[] }) {
+interface ModuleOption {
+  id: string
+  title: string
+}
+
+export function LessonList({
+  courseId,
+  lessons,
+  modules,
+}: {
+  courseId: string
+  lessons: Lesson[]
+  modules: ModuleOption[]
+}) {
   const [open, setOpen] = useState(false)
   const [title, setTitle] = useState('')
   const [content, setContent] = useState('')
   const [estimate, setEstimate] = useState(20)
+  const [moduleId, setModuleId] = useState<string>('')
   const [creating, setCreating] = useState(false)
   const { toast } = useToast()
   const router = useRouter()
@@ -48,6 +63,18 @@ export function LessonList({ courseId, lessons }: { courseId: string; lessons: L
       content_mdx: content || `# ${title}\n\nNội dung bài học…`,
       estimated_minutes: estimate,
     })
+    if (!error && moduleId) {
+      // Newly created lesson — fetch its id then attach to module
+      const { data } = await supabase
+        .from('lessons')
+        .select('id')
+        .eq('course_id', courseId)
+        .eq('order_index', nextIdx)
+        .single()
+      if (data) {
+        await lessonService.update(supabase, data.id, { module_id: moduleId })
+      }
+    }
     setCreating(false)
     if (error) {
       toast({ title: 'Lỗi', description: error.message, variant: 'destructive' })
@@ -57,6 +84,7 @@ export function LessonList({ courseId, lessons }: { courseId: string; lessons: L
     setOpen(false)
     setTitle('')
     setContent('')
+    setModuleId('')
     router.refresh()
   }
 
@@ -64,6 +92,18 @@ export function LessonList({ courseId, lessons }: { courseId: string; lessons: L
     if (!confirm('Xóa lesson này?')) return
     const supabase = createBrowserSupabase()
     const { error } = await lessonService.remove(supabase, id)
+    if (error) {
+      toast({ title: 'Lỗi', description: error.message, variant: 'destructive' })
+      return
+    }
+    router.refresh()
+  }
+
+  async function handleAssignModule(lessonId: string, newModuleId: string) {
+    const supabase = createBrowserSupabase()
+    const { error } = await lessonService.update(supabase, lessonId, {
+      module_id: newModuleId || null,
+    })
     if (error) {
       toast({ title: 'Lỗi', description: error.message, variant: 'destructive' })
       return
@@ -89,6 +129,23 @@ export function LessonList({ courseId, lessons }: { courseId: string; lessons: L
                 <Label>Tiêu đề</Label>
                 <Input value={title} onChange={(e) => setTitle(e.target.value)} />
               </div>
+              {modules.length > 0 && (
+                <div className="space-y-1.5">
+                  <Label>Module</Label>
+                  <select
+                    className="w-full rounded-md border bg-background px-3 py-2 text-sm"
+                    value={moduleId}
+                    onChange={(e) => setModuleId(e.target.value)}
+                  >
+                    <option value="">(Không gán module)</option>
+                    {modules.map((m) => (
+                      <option key={m.id} value={m.id}>
+                        {m.title}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
               <div className="space-y-1.5">
                 <Label>Nội dung (Markdown)</Label>
                 <Textarea
@@ -129,18 +186,33 @@ export function LessonList({ courseId, lessons }: { courseId: string; lessons: L
         ) : (
           <ol className="divide-y">
             {lessons.map((l, i) => (
-              <li key={l.id} className="flex items-center justify-between p-3">
-                <div className="flex items-center gap-3">
-                  <span className="flex size-7 items-center justify-center rounded-full bg-muted text-xs font-medium">
+              <li key={l.id} className="flex items-center justify-between gap-3 p-3">
+                <div className="flex min-w-0 flex-1 items-center gap-3">
+                  <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-medium">
                     {i + 1}
                   </span>
                   <Link
                     href={`/teacher/courses/${courseId}/lessons/${l.id}`}
-                    className="font-medium hover:underline"
+                    className="truncate font-medium hover:underline"
                   >
                     {l.title}
                   </Link>
                 </div>
+                {modules.length > 0 && (
+                  <select
+                    className="rounded-md border bg-background px-2 py-1 text-xs"
+                    value={l.module_id ?? ''}
+                    onChange={(e) => handleAssignModule(l.id, e.target.value)}
+                    aria-label="Gán module"
+                  >
+                    <option value="">— Không module —</option>
+                    {modules.map((m) => (
+                      <option key={m.id} value={m.id}>
+                        {m.title}
+                      </option>
+                    ))}
+                  </select>
+                )}
                 <Button variant="ghost" size="icon" onClick={() => handleDelete(l.id)}>
                   <Trash2 className="size-4" />
                 </Button>

@@ -46,9 +46,14 @@ export function GradingResultView({ status, result }: { status: Status; result: 
 
   if (!result) return null
 
-  const pct = (Number(result.score) / Number(result.max_score)) * 100
+  const finalScore =
+    result.teacher_override_score !== null
+      ? Number(result.teacher_override_score)
+      : Number(result.score)
+  const pct = (finalScore / Number(result.max_score)) * 100
   const passColor =
     pct >= 80 ? 'text-emerald-600' : pct >= 50 ? 'text-amber-600' : 'text-destructive'
+  const wasOverridden = result.teacher_override_score !== null
 
   return (
     <div className="space-y-4">
@@ -56,20 +61,41 @@ export function GradingResultView({ status, result }: { status: Status; result: 
         <CheckCircle2 className="size-8 text-emerald-600" />
         <div className="min-w-0 flex-1">
           <div className="flex items-baseline gap-2">
-            <span className={`text-3xl font-bold ${passColor}`}>{Number(result.score).toFixed(1)}</span>
-            <span className="text-sm text-muted-foreground">/ {Number(result.max_score).toFixed(0)}</span>
+            <span className={`text-3xl font-bold ${passColor}`}>
+              {finalScore.toFixed(1)}
+            </span>
+            <span className="text-sm text-muted-foreground">
+              / {Number(result.max_score).toFixed(0)}
+            </span>
+            {wasOverridden && (
+              <span className="text-xs text-muted-foreground line-through">
+                Tự động: {Number(result.score).toFixed(1)}
+              </span>
+            )}
           </div>
           <div className="text-sm text-muted-foreground">
             {result.passed_tests}/{result.total_tests} test pass
             {result.metric_value !== null && (
               <> · metric: {Number(result.metric_value).toFixed(3)}</>
             )}
+            {wasOverridden && ' · điểm đã được giáo viên điều chỉnh'}
           </div>
         </div>
         <Badge variant={pct >= 50 ? 'success' : 'destructive'}>
           {pct >= 80 ? 'Xuất sắc' : pct >= 50 ? 'Đạt' : 'Chưa đạt'}
         </Badge>
       </div>
+
+      {result.teacher_comment && (
+        <div className="rounded-md border-l-4 border-l-blue-500 bg-blue-50 p-3 text-sm dark:bg-blue-950/30">
+          <div className="mb-1 text-xs font-semibold uppercase text-blue-700 dark:text-blue-300">
+            Nhận xét của giáo viên
+          </div>
+          <div className="whitespace-pre-wrap text-blue-900 dark:text-blue-100">
+            {result.teacher_comment}
+          </div>
+        </div>
+      )}
 
       {result.test_details && (
         <details className="rounded-md border">

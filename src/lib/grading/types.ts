@@ -14,7 +14,7 @@ export interface GradingInput {
 }
 
 export interface MetricConfig {
-  metric: 'accuracy' | 'f1' | 'mse' | 'rmse' | 'r2' | 'ssim'
+  metric: 'accuracy' | 'f1' | 'f1_weighted' | 'mse' | 'rmse' | 'r2' | 'ssim' | 'iou' | 'dice'
   threshold?: number
   scoring: {
     type: 'linear' | 'threshold' | 'binary'
@@ -22,6 +22,10 @@ export interface MetricConfig {
     zeroMarksAt: number
   }
 }
+
+/** Axis-aligned bounding box: [x, y, w, h] in pixel coords */
+export type BBox = [number, number, number, number]
+export type Polygon = Array<[number, number]>
 
 export interface GradingOutput {
   score: number

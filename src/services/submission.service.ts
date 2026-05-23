@@ -30,7 +30,12 @@ export const submissionService = {
       .single()
   },
 
-  async overrideScore(supabase: SB, submissionId: string, newScore: number, teacherId: string) {
+  async overrideScore(
+    supabase: SB,
+    submissionId: string,
+    teacherId: string,
+    input: { overrideScore: number | null; comment: string | null },
+  ) {
     const { data: latest } = await supabase
       .from('grading_results')
       .select('id, max_score')
@@ -41,9 +46,22 @@ export const submissionService = {
 
     if (!latest) throw new Error('No grading result to override')
 
-    return supabase
+    const { error: updErr } = await supabase
       .from('grading_results')
-      .update({ score: newScore, graded_by: `manual:${teacherId}` })
+      .update({
+        teacher_override_score: input.overrideScore,
+        teacher_comment: input.comment,
+        reviewed_by: teacherId,
+        reviewed_at: new Date().toISOString(),
+      })
       .eq('id', latest.id)
+    if (updErr) throw updErr
+
+    // If submission was awaiting manual review, mark it as graded now
+    await supabase
+      .from('submissions')
+      .update({ status: 'graded' })
+      .eq('id', submissionId)
+      .eq('status', 'manual_review')
   },
 }

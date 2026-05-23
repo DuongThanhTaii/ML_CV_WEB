@@ -2,7 +2,10 @@ import { createServerSupabase } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
 import { LessonEditor } from '@/components/teacher/lesson-editor'
 import { AssignmentList } from '@/components/teacher/assignment-list'
+import { QuizEditor } from '@/components/teacher/quiz-editor'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { moduleService } from '@/services/module.service'
+import { quizService } from '@/services/quiz.service'
 
 interface Props {
   params: Promise<{ id: string; lessonId: string }>
@@ -19,11 +22,15 @@ export default async function TeacherLessonEditPage({ params }: Props) {
     .single()
   if (error || !lesson) notFound()
 
-  const { data: assignments } = await supabase
-    .from('assignments')
-    .select('id, title, evaluation_type, max_score, is_published, created_at')
-    .eq('lesson_id', lessonId)
-    .order('created_at')
+  const [{ data: assignments }, { data: modules }, { data: quizzes }] = await Promise.all([
+    supabase
+      .from('assignments')
+      .select('id, title, evaluation_type, max_score, is_published, created_at')
+      .eq('lesson_id', lessonId)
+      .order('created_at'),
+    moduleService.listByCourse(supabase, courseId),
+    quizService.listForTeacher(supabase, lessonId),
+  ])
 
   return (
     <div className="mx-auto max-w-4xl space-y-6">
@@ -37,10 +44,14 @@ export default async function TeacherLessonEditPage({ params }: Props) {
       <Tabs defaultValue="content">
         <TabsList>
           <TabsTrigger value="content">Nội dung</TabsTrigger>
+          <TabsTrigger value="quiz">Quiz ({quizzes?.length ?? 0})</TabsTrigger>
           <TabsTrigger value="assignments">Bài tập ({assignments?.length ?? 0})</TabsTrigger>
         </TabsList>
         <TabsContent value="content">
-          <LessonEditor lesson={lesson} />
+          <LessonEditor lesson={lesson} modules={modules ?? []} />
+        </TabsContent>
+        <TabsContent value="quiz">
+          <QuizEditor lessonId={lessonId} quizzes={quizzes ?? []} />
         </TabsContent>
         <TabsContent value="assignments">
           <AssignmentList lessonId={lessonId} courseId={courseId} assignments={assignments ?? []} />
