@@ -17,13 +17,26 @@ import {
   CheckCircle2,
   FileText,
   Code2,
+  Sparkles,
+  AlertCircle,
 } from 'lucide-react'
+
+interface QuizDraft {
+  question: string
+  options: string[] // length 4
+  correct_answer: string
+  explanation: string
+}
 
 interface LessonDraft {
   /** Local UI key */
   uid: string
   title: string
   file: File | null
+  mdxContent: string
+  quizzes: QuizDraft[]
+  aiBusy: boolean
+  aiError: string | null
   requireCoding: boolean
   hiddenTests: string
   passThresholdPct: number
@@ -95,6 +108,10 @@ export function CourseBuilder() {
         uid: uid(),
         title: lessonTitleFromFile(f.name),
         file: f,
+        mdxContent: '',
+        quizzes: [],
+        aiBusy: false,
+        aiError: null,
         requireCoding: true,
         hiddenTests: '',
         passThresholdPct: 50,
@@ -112,12 +129,53 @@ export function CourseBuilder() {
         uid: uid(),
         title: `Bài ${prev.length + 1}`,
         file: null,
+        mdxContent: '',
+        quizzes: [],
+        aiBusy: false,
+        aiError: null,
         requireCoding: false,
         hiddenTests: '',
         passThresholdPct: 50,
         starterCode: '# Viết code của bạn ở đây\n',
       },
     ])
+  }
+
+  async function runAiOnLesson(uidKey: string) {
+    const lesson = lessons.find((l) => l.uid === uidKey)
+    if (!lesson) return
+    if (!lesson.file) {
+      updateLesson(uidKey, { aiError: 'Cần upload PDF trước khi gọi AI' })
+      return
+    }
+    updateLesson(uidKey, { aiBusy: true, aiError: null })
+    try {
+      const fd = new FormData()
+      fd.append('file', lesson.file)
+      fd.append('title', lesson.title)
+      const res = await fetch('/api/ai/analyze-pdf', { method: 'POST', body: fd })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error ?? `HTTP ${res.status}`)
+      updateLesson(uidKey, {
+        mdxContent: data.mdx_summary ?? '',
+        quizzes: Array.isArray(data.quiz) ? data.quiz : [],
+        requireCoding: true,
+        hiddenTests: data.assignment?.hidden_tests ?? lesson.hiddenTests,
+        starterCode: data.assignment?.starter_code ?? lesson.starterCode,
+        aiBusy: false,
+        aiError: null,
+      })
+      toast({
+        title: 'AI đã gợi ý xong',
+        description: `${data.quiz?.length ?? 0} câu quiz + 1 bài coding draft`,
+        variant: 'success',
+      })
+    } catch (e) {
+      updateLesson(uidKey, {
+        aiBusy: false,
+        aiError: e instanceof Error ? e.message : 'AI fail',
+      })
+    }
   }
 
   function updateLesson(uidKey: string, patch: Partial<LessonDraft>) {
@@ -177,6 +235,8 @@ export function CourseBuilder() {
           lessons: lessons.map((l) => ({
             title: l.title.trim(),
             hasPdf: !!l.file,
+            mdxContent: l.mdxContent.trim() || undefined,
+            quizzes: l.quizzes.length > 0 ? l.quizzes : undefined,
             coding: l.requireCoding
               ? {
                   hiddenTestsPlain: l.hiddenTests,
@@ -373,7 +433,7 @@ export function CourseBuilder() {
                   <span className="mt-1 flex size-7 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-medium">
                     {i + 1}
                   </span>
-                  <div className="min-w-0 flex-1 space-y-2">
+                  <div className="min-w-0 flex-1 space-y-3">
                     <div className="flex items-center gap-2">
                       <Input
                         value={l.title}
@@ -387,6 +447,46 @@ export function CourseBuilder() {
                         </span>
                       )}
                     </div>
+
+                    {l.file && (
+                      <div>
+                        <Button
+                          type="button"
+                          variant={l.quizzes.length > 0 || l.mdxContent ? 'outline' : 'default'}
+                          size="sm"
+                          onClick={() => runAiOnLesson(l.uid)}
+                          disabled={l.aiBusy || l.file.size > 4 * 1024 * 1024}
+                        >
+                          {l.aiBusy ? (
+                            <>
+                              <Loader2 className="size-4 animate-spin" /> AI đang phân tích PDF...
+                            </>
+                          ) : (
+                            <>
+                              <Sparkles className="size-4" />
+                              {l.quizzes.length > 0 || l.mdxContent
+                                ? 'AI gợi ý lại'
+                                : 'AI gợi ý nội dung từ PDF'}
+                            </>
+                          )}
+                        </Button>
+                        {l.file.size > 4 * 1024 * 1024 && (
+                          <p className="mt-1 text-xs text-amber-600">
+                            ⚠ PDF &gt; 4MB không gọi được AI. Soạn nội dung tay.
+                          </p>
+                        )}
+                        {l.aiError && (
+                          <p className="mt-1 flex items-center gap-1 text-xs text-red-600">
+                            <AlertCircle className="size-3" /> {l.aiError}
+                          </p>
+                        )}
+                      </div>
+                    )}
+
+                    <AiDraftSection
+                      lesson={l}
+                      onUpdate={(patch) => updateLesson(l.uid, patch)}
+                    />
 
                     <label className="flex items-center gap-2 text-sm">
                       <input
@@ -413,7 +513,7 @@ export function CourseBuilder() {
                               onChange={(e) =>
                                 updateLesson(l.uid, { starterCode: e.target.value })
                               }
-                              rows={3}
+                              rows={5}
                               className="font-mono text-xs"
                             />
                           </div>
@@ -435,13 +535,18 @@ export function CourseBuilder() {
                         <div className="space-y-1">
                           <Label className="text-xs">
                             Hidden tests (chấm điểm — học sinh KHÔNG thấy)
+                            {l.quizzes.length > 0 && (
+                              <span className="ml-2 text-amber-600">
+                                ⚠ Nếu AI tạo, hãy KIỂM TRA test chạy đúng trước khi submit
+                              </span>
+                            )}
                           </Label>
                           <Textarea
                             value={l.hiddenTests}
                             onChange={(e) =>
                               updateLesson(l.uid, { hiddenTests: e.target.value })
                             }
-                            rows={5}
+                            rows={6}
                             className="font-mono text-xs"
                             placeholder={`# Ví dụ:\ndef test_solution():\n    assert solve(2, 3) == 5\n    assert solve(10, 20) == 30`}
                           />
@@ -480,7 +585,7 @@ export function CourseBuilder() {
         )}
       </section>
 
-      <section className="sticky bottom-4 z-10 flex flex-wrap items-center justify-between gap-3 rounded-md border bg-background/95 p-4 shadow-lg backdrop-blur">
+      <section className="sticky bottom-4 z-10 flex flex-wrap items-center justify-between gap-3 rounded-md border bg-background/95 p-4 shadow-lg backdrop-blur" id="builder-actions">
         <div className="text-sm text-muted-foreground">
           {busy ? (
             <span className="flex items-center gap-2">
@@ -498,6 +603,119 @@ export function CourseBuilder() {
           Tạo khóa học
         </Button>
       </section>
+    </div>
+  )
+}
+
+function AiDraftSection({
+  lesson,
+  onUpdate,
+}: {
+  lesson: LessonDraft
+  onUpdate: (patch: Partial<LessonDraft>) => void
+}) {
+  const hasMdx = lesson.mdxContent.trim().length > 0
+  const hasQuiz = lesson.quizzes.length > 0
+  if (!hasMdx && !hasQuiz) return null
+
+  return (
+    <div className="space-y-2 rounded-md border border-blue-200 bg-blue-50/50 p-3 dark:border-blue-900 dark:bg-blue-950/20">
+      <div className="flex items-center gap-2 text-xs font-semibold text-blue-700 dark:text-blue-300">
+        <Sparkles className="size-3.5" /> NỘI DUNG AI GỢI Ý (review trước khi submit)
+      </div>
+
+      {hasMdx && (
+        <div className="space-y-1">
+          <Label className="text-xs">Nội dung bài học (MDX)</Label>
+          <Textarea
+            value={lesson.mdxContent}
+            onChange={(e) => onUpdate({ mdxContent: e.target.value })}
+            rows={6}
+            className="font-mono text-xs"
+          />
+        </div>
+      )}
+
+      {hasQuiz && (
+        <details className="rounded-md bg-background/60 p-2" open>
+          <summary className="cursor-pointer text-xs font-medium">
+            Quiz ({lesson.quizzes.length} câu)
+          </summary>
+          <ul className="mt-2 space-y-3">
+            {lesson.quizzes.map((q, i) => (
+              <li key={i} className="space-y-1 rounded-md border bg-background p-2 text-xs">
+                <div className="flex items-start gap-1">
+                  <span className="font-medium">{i + 1}.</span>
+                  <Input
+                    value={q.question}
+                    onChange={(e) => {
+                      const next = [...lesson.quizzes]
+                      next[i] = { ...next[i]!, question: e.target.value }
+                      onUpdate({ quizzes: next })
+                    }}
+                    className="text-xs"
+                  />
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => {
+                      const next = lesson.quizzes.filter((_, j) => j !== i)
+                      onUpdate({ quizzes: next })
+                    }}
+                  >
+                    <Trash2 className="size-3.5" />
+                  </Button>
+                </div>
+                <div className="grid gap-1 pl-4 sm:grid-cols-2">
+                  {q.options.map((opt, j) => (
+                    <label
+                      key={j}
+                      className={`flex items-center gap-1.5 rounded border px-2 py-1 ${
+                        q.correct_answer === opt
+                          ? 'border-green-400 bg-green-50 dark:border-green-700 dark:bg-green-950/30'
+                          : ''
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        name={`correct-${lesson.uid}-${i}`}
+                        checked={q.correct_answer === opt}
+                        onChange={() => {
+                          const next = [...lesson.quizzes]
+                          next[i] = { ...next[i]!, correct_answer: opt }
+                          onUpdate({ quizzes: next })
+                        }}
+                        className="size-3"
+                      />
+                      <Input
+                        value={opt}
+                        onChange={(e) => {
+                          const newOpts = [...q.options]
+                          const oldOpt = newOpts[j]
+                          newOpts[j] = e.target.value
+                          const next = [...lesson.quizzes]
+                          next[i] = {
+                            ...next[i]!,
+                            options: newOpts,
+                            // keep correct_answer in sync with renamed option
+                            correct_answer:
+                              q.correct_answer === oldOpt ? e.target.value : q.correct_answer,
+                          }
+                          onUpdate({ quizzes: next })
+                        }}
+                        className="h-7 text-xs"
+                      />
+                    </label>
+                  ))}
+                </div>
+                {q.explanation && (
+                  <p className="pl-4 italic text-muted-foreground">💡 {q.explanation}</p>
+                )}
+              </li>
+            ))}
+          </ul>
+        </details>
+      )}
     </div>
   )
 }

@@ -4,10 +4,21 @@ import { NextResponse } from 'next/server'
 import { z } from 'zod'
 import { encryptTests } from '@/lib/grading/encryption'
 
+const quizQuestionSchema = z.object({
+  question: z.string().min(1).max(2000),
+  options: z.array(z.string().min(1).max(500)).length(4),
+  correct_answer: z.string().min(1).max(500),
+  explanation: z.string().max(2000).optional().default(''),
+})
+
 const lessonSchema = z.object({
   title: z.string().min(1).max(200),
+  /** Optional MDX body (else placeholder "Đọc PDF ...") */
+  mdxContent: z.string().max(20_000).optional(),
   /** true if this lesson has a PDF the client will upload after this call returns */
   hasPdf: z.boolean(),
+  /** Optional quiz questions (MCQ) */
+  quizzes: z.array(quizQuestionSchema).max(20).optional(),
   /** Optional coding assignment definition */
   coding: z
     .object({
@@ -129,6 +140,10 @@ export async function POST(req: Request) {
 
   for (let i = 0; i < body.lessons.length; i++) {
     const l = body.lessons[i]!
+    const defaultMdx =
+      '# ' +
+      l.title +
+      '\n\nĐọc file PDF kèm theo, sau đó hoàn thành bài coding ở tab **Bài tập** để mở khóa bài tiếp theo.'
     const { data: lesson, error: lessonErr } = await svc
       .from('lessons')
       .insert({
@@ -136,10 +151,7 @@ export async function POST(req: Request) {
         module_id: moduleRow.id,
         order_index: i,
         title: l.title,
-        content_mdx:
-          '# ' +
-          l.title +
-          '\n\nĐọc file PDF kèm theo, sau đó hoàn thành bài coding ở tab **Bài tập** để mở khóa bài tiếp theo.',
+        content_mdx: l.mdxContent?.trim() || defaultMdx,
         estimated_minutes: 20,
         pass_threshold: 70,
       })
@@ -152,6 +164,28 @@ export async function POST(req: Request) {
         { error: `Lesson ${i + 1} insert failed: ${lessonErr?.message}` },
         { status: 500 },
       )
+    }
+
+    // Insert quiz questions if AI-generated or teacher-provided
+    if (l.quizzes && l.quizzes.length > 0) {
+      const quizRows = l.quizzes.map((q, idx) => ({
+        lesson_id: lesson.id,
+        question_type: 'mcq' as const,
+        question: q.question,
+        options: q.options,
+        correct_answer: q.correct_answer,
+        explanation: q.explanation || null,
+        order_index: idx,
+        points: 1,
+      }))
+      const { error: quizErr } = await svc.from('quizzes').insert(quizRows)
+      if (quizErr) {
+        await svc.from('courses').delete().eq('id', course.id)
+        return NextResponse.json(
+          { error: `Quiz for lesson ${i + 1} failed: ${quizErr.message}` },
+          { status: 500 },
+        )
+      }
     }
 
     let assignmentId: string | null = null
