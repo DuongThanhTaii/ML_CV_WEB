@@ -3,7 +3,7 @@ import { courseService } from '@/services/course.service'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Plus } from 'lucide-react'
+import { Plus, Wand2 } from 'lucide-react'
 
 export default async function TeacherCoursesPage() {
   const supabase = await createServerSupabase()
@@ -16,11 +16,18 @@ export default async function TeacherCoursesPage() {
     <div className="space-y-6">
       <header className="flex items-center justify-between">
         <h1 className="text-3xl font-bold">Khóa học của tôi</h1>
-        <Button asChild>
-          <Link href="/teacher/courses/new">
-            <Plus className="size-4" /> Khóa học mới
-          </Link>
-        </Button>
+        <div className="flex gap-2">
+          <Button asChild>
+            <Link href="/teacher/courses/builder">
+              <Wand2 className="size-4" /> Tạo nhanh từ PDF
+            </Link>
+          </Button>
+          <Button asChild variant="outline">
+            <Link href="/teacher/courses/new">
+              <Plus className="size-4" /> Tạo thủ công
+            </Link>
+          </Button>
+        </div>
       </header>
 
       {courses?.length ? (
@@ -59,9 +66,16 @@ export default async function TeacherCoursesPage() {
       ) : (
         <div className="rounded-lg border border-dashed p-12 text-center">
           <p className="text-muted-foreground">Bạn chưa tạo khóa học nào.</p>
-          <Button asChild className="mt-4">
-            <Link href="/teacher/courses/new">Tạo khóa học đầu tiên</Link>
-          </Button>
+          <div className="mt-4 flex justify-center gap-2">
+            <Button asChild>
+              <Link href="/teacher/courses/builder">
+                <Wand2 className="size-4" /> Tạo nhanh từ PDF
+              </Link>
+            </Button>
+            <Button asChild variant="outline">
+              <Link href="/teacher/courses/new">Tạo thủ công</Link>
+            </Button>
+          </div>
         </div>
       )}
     </div>
