@@ -28,6 +28,12 @@ export const useToastStore = create<State & Actions>((set) => ({
   dismiss: (id) => set((s) => ({ toasts: s.toasts.filter((t) => t.id !== id) })),
 }))
 
+// IMPORTANT: pick each action with its own selector to keep the returned
+// references stable. Returning `{...}` inline from a single selector creates
+// a new object every render and can trigger infinite loops if consumers put
+// `toast` in a useEffect dependency list.
 export function useToast() {
-  return useToastStore((s) => ({ toast: s.toast, dismiss: s.dismiss }))
+  const toast = useToastStore((s) => s.toast)
+  const dismiss = useToastStore((s) => s.dismiss)
+  return { toast, dismiss }
 }

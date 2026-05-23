@@ -13,7 +13,11 @@ const MonacoEditor = dynamic(() => import('@monaco-editor/react'), {
 })
 
 export function CodeCell({ cell }: { cell: NotebookCell }) {
-  const { updateSource, setOutputs, setRunning, incrementExecution } = useNotebookStore()
+  // Stable per-action selectors — avoid subscribing to the whole store
+  const updateSource = useNotebookStore((s) => s.updateSource)
+  const setOutputs = useNotebookStore((s) => s.setOutputs)
+  const setRunning = useNotebookStore((s) => s.setRunning)
+  const incrementExecution = useNotebookStore((s) => s.incrementExecution)
   const { runCell, status } = usePyodide()
 
   async function handleRun() {

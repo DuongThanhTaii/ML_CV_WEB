@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { useNotebookStore } from '@/stores/notebook-store'
 import { Cell } from './cell'
 import { NotebookToolbar } from './toolbar'
@@ -12,7 +12,19 @@ interface NotebookProps {
 }
 
 export function Notebook({ initialCells, onChange }: NotebookProps) {
-  const { cells, setCells, addCell } = useNotebookStore()
+  // Stable selectors — actions are referentially stable in Zustand,
+  // so subscribing to each one individually avoids unnecessary re-renders.
+  const cells = useNotebookStore((s) => s.cells)
+  const setCells = useNotebookStore((s) => s.setCells)
+  const addCell = useNotebookStore((s) => s.addCell)
+
+  // Keep the latest onChange in a ref so it can be called from effects
+  // without being part of the dep list (avoiding loops if parent passes
+  // an inline function).
+  const onChangeRef = useRef(onChange)
+  useEffect(() => {
+    onChangeRef.current = onChange
+  }, [onChange])
 
   useEffect(() => {
     if (initialCells) setCells(initialCells)
@@ -20,8 +32,8 @@ export function Notebook({ initialCells, onChange }: NotebookProps) {
   }, [])
 
   useEffect(() => {
-    onChange?.(cells)
-  }, [cells, onChange])
+    onChangeRef.current?.(cells)
+  }, [cells])
 
   return (
     <div className="space-y-4">
