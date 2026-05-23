@@ -10,14 +10,18 @@ export default async function TeacherLayout({ children }: { children: React.Reac
   } = await supabase.auth.getUser()
   if (!user) redirect('/login?next=/teacher')
 
-  const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single()
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('role')
+    .eq('id', user.id)
+    .single<{ role: string }>()
   if (profile?.role !== 'teacher' && profile?.role !== 'admin') {
     redirect('/dashboard')
   }
 
   return (
     <div className="flex min-h-screen">
-      <TeacherSidebar />
+      <TeacherSidebar isAdmin={profile?.role === 'admin'} />
       <div className="flex flex-1 flex-col">
         <Topbar email={user.email ?? ''} />
         <main className="flex-1 overflow-auto p-6">{children}</main>
