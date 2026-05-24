@@ -31,11 +31,11 @@ ${input.studentCode.slice(0, 3000)}
 # Task
 Generate constructive feedback in **Vietnamese**, max 200 words, with this structure:
 
-**👍 Điểm tốt** (1-2 sentences, be specific about which lines)
+**Điểm tốt** (1-2 sentences, be specific about which lines)
 
-**🔍 Vấn đề chính** (identify ONE root cause, explain the concept briefly)
+**Vấn đề chính** (identify ONE root cause, explain the concept briefly)
 
-**🎯 Bước tiếp theo** (one concrete action, NOT the full solution)
+**Bước tiếp theo** (one concrete action, NOT the full solution)
 
 # Forbidden
 - Do not write the corrected code in full.

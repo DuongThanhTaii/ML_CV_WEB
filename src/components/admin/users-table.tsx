@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input'
 import { useToast } from '@/hooks/use-toast'
 import { useRouter } from 'next/navigation'
 import { formatDate } from '@/lib/utils'
-import { CheckCircle2, Copy, Mail, RefreshCw, Trash2, UserCheck, Loader2 } from 'lucide-react'
+import { CheckCircle2, Copy, Mail, RefreshCw, Trash2, UserCheck, Loader2, X } from 'lucide-react'
 
 export interface AdminUser {
   id: string
@@ -122,8 +122,8 @@ export function UsersTable({ initialUsers, currentUserId }: Props) {
             >
               <Copy className="size-3.5" /> Copy
             </Button>
-            <Button size="sm" variant="ghost" onClick={() => setLink(null)}>
-              ✕
+            <Button size="sm" variant="ghost" onClick={() => setLink(null)} aria-label="Đóng">
+              <X className="size-3.5" />
             </Button>
           </div>
           <p className="text-xs text-muted-foreground">

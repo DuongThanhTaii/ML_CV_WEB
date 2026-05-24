@@ -11,7 +11,7 @@ import remarkGfm from 'remark-gfm'
 import { createBrowserSupabase } from '@/lib/supabase/client'
 import { lessonService } from '@/services/lesson.service'
 import { useToast } from '@/hooks/use-toast'
-import { Loader2, Upload, Trash2, ExternalLink } from 'lucide-react'
+import { Check, Loader2, Upload, Trash2, ExternalLink } from 'lucide-react'
 import { parseYouTubeId, youtubeThumbnailUrl } from '@/lib/youtube/parse'
 
 interface ModuleOption {
@@ -238,8 +238,9 @@ function PdfSection({
         )}
       </div>
       {path ? (
-        <div className="rounded-md bg-muted/50 px-3 py-2 text-sm">
-          ✓ Đã upload — {((size ?? 0) / 1024 / 1024).toFixed(2)} MB
+        <div className="inline-flex items-center gap-1.5 rounded-md border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-sm text-emerald-600 dark:text-emerald-400">
+          <Check className="size-4" />
+          Đã upload — {((size ?? 0) / 1024 / 1024).toFixed(2)} MB
         </div>
       ) : (
         <label className="flex cursor-pointer items-center justify-center gap-2 rounded-md border-2 border-dashed p-4 text-sm text-muted-foreground hover:bg-muted/30">

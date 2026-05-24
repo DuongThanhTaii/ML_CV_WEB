@@ -5,7 +5,7 @@ const STARTER_CELLS = [
     id: 'cell-1',
     type: 'markdown' as const,
     source:
-      '# 🧪 Playground\n\nĐây là notebook trống. Hãy thử chạy ô bên dưới — Pyodide sẽ tải lần đầu (~5-8s) rồi cache vĩnh viễn.',
+      '# Playground\n\nĐây là notebook trống. Hãy thử chạy ô bên dưới — Pyodide sẽ tải lần đầu (~5-8s) rồi cache vĩnh viễn.',
     outputs: [],
   },
   {

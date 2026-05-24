@@ -19,6 +19,7 @@ import {
   Code2,
   Sparkles,
   AlertCircle,
+  Lightbulb,
 } from 'lucide-react'
 
 interface QuizDraft {
@@ -471,8 +472,9 @@ export function CourseBuilder() {
                           )}
                         </Button>
                         {l.file.size > 4 * 1024 * 1024 && (
-                          <p className="mt-1 text-xs text-amber-600">
-                            ⚠ PDF &gt; 4MB không gọi được AI. Soạn nội dung tay.
+                          <p className="mt-1 inline-flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400">
+                            <AlertCircle className="size-3" />
+                            PDF &gt; 4MB không gọi được AI. Soạn nội dung tay.
                           </p>
                         )}
                         {l.aiError && (
@@ -536,8 +538,9 @@ export function CourseBuilder() {
                           <Label className="text-xs">
                             Hidden tests (chấm điểm — học sinh KHÔNG thấy)
                             {l.quizzes.length > 0 && (
-                              <span className="ml-2 text-amber-600">
-                                ⚠ Nếu AI tạo, hãy KIỂM TRA test chạy đúng trước khi submit
+                              <span className="ml-2 inline-flex items-center gap-1 text-amber-600 dark:text-amber-400">
+                                <AlertCircle className="size-3" />
+                                Nếu AI tạo, hãy KIỂM TRA test chạy đúng trước khi submit
                               </span>
                             )}
                           </Label>
@@ -709,7 +712,10 @@ function AiDraftSection({
                   ))}
                 </div>
                 {q.explanation && (
-                  <p className="pl-4 italic text-muted-foreground">💡 {q.explanation}</p>
+                  <p className="flex items-start gap-1.5 pl-4 italic text-muted-foreground">
+                    <Lightbulb className="mt-0.5 size-3 shrink-0 text-amber-500" />
+                    <span>{q.explanation}</span>
+                  </p>
                 )}
               </li>
             ))}

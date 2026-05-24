@@ -6,7 +6,7 @@ import { AnnotationEditor, type EditorAnnotation } from '@/components/teacher/an
 import { Button } from '@/components/ui/button'
 import { createBrowserSupabase } from '@/lib/supabase/client'
 import { annotationService } from '@/services/annotation.service'
-import { ChevronLeft } from 'lucide-react'
+import { ChevronLeft, Pencil } from 'lucide-react'
 
 interface Props {
   datasetId: string
@@ -66,7 +66,8 @@ export function DatasetAnnotationSection({ datasetId, images, isOwner }: Props) 
                 size="sm"
                 onClick={() => setSelected(img)}
               >
-                ✏️ {img.label ?? img.path.split('/').pop()}
+                <Pencil className="size-3" />
+                {img.label ?? img.path.split('/').pop()}
               </Button>
             ))}
           </div>

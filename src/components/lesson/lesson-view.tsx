@@ -5,7 +5,21 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
-import { ChevronLeft, ChevronRight } from 'lucide-react'
+import {
+  ArrowLeft,
+  Bot,
+  Check,
+  ChevronLeft,
+  ChevronRight,
+  ClipboardCheck,
+  FileText,
+  FlaskConical,
+  Lock,
+  PlayCircle,
+  ScrollText,
+  Target,
+  X,
+} from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Notebook } from '@/components/notebook/notebook'
@@ -17,6 +31,7 @@ import { PdfViewer } from '@/components/lesson/pdf-viewer'
 import type { NotebookCell } from '@/types/notebook'
 import type { StudentQuizQuestion } from '@/services/quiz.service'
 import type { GatingAssignmentStatus } from '@/lib/lessons/assignment-gating'
+import { cn } from '@/lib/utils'
 
 interface LessonProgress {
   best_quiz_score: number | null
@@ -92,62 +107,81 @@ export function LessonView({
   return (
     <div className="mx-auto max-w-6xl space-y-6">
       <nav className="text-sm">
-        <Link href={`/courses/${courseSlug}`} className="text-muted-foreground hover:text-foreground">
-          ← Quay lại khóa học
+        <Link
+          href={`/courses/${courseSlug}`}
+          className="inline-flex items-center gap-1.5 text-muted-foreground transition-colors hover:text-foreground"
+        >
+          <ArrowLeft className="size-3.5" />
+          Quay lại khóa học
         </Link>
       </nav>
 
-      <header className="flex flex-wrap items-start justify-between gap-3">
-        <h1 className="text-3xl font-bold tracking-tight">{lesson.title}</h1>
-        <div className="flex flex-wrap gap-2 text-xs">
+      <header className="space-y-4">
+        <h1 className="text-3xl font-bold tracking-tight md:text-4xl">{lesson.title}</h1>
+        <div className="flex flex-wrap gap-2">
           {hasQuiz && (
-            <span
-              className={`rounded-md px-3 py-1.5 font-medium ${
+            <RequirementBadge
+              passed={quizPassed}
+              label="Quiz"
+              value={
                 quizPassed
-                  ? 'bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-400'
-                  : 'bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-400'
-              }`}
-            >
-              Quiz: {quizPassed ? `✓ ${progress?.best_quiz_score}%` : `cần ≥${lesson.pass_threshold}%`}
-            </span>
+                  ? `${progress?.best_quiz_score}%`
+                  : `cần ≥${lesson.pass_threshold}%`
+              }
+            />
           )}
           {hasVideo && lesson.video_required && (
-            <span
-              className={`rounded-md px-3 py-1.5 font-medium ${
-                videoOk
-                  ? 'bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-400'
-                  : 'bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-400'
-              }`}
-            >
-              Video: {videoOk ? '✓ đã xem' : `${videoPct}% / 90%`}
-            </span>
+            <RequirementBadge
+              passed={videoOk}
+              label="Video"
+              value={videoOk ? 'đã xem' : `${videoPct}% / 90%`}
+            />
           )}
           {gatingAssignments.map((g) => (
-            <span
+            <RequirementBadge
               key={g.assignment_id}
-              className={`rounded-md px-3 py-1.5 font-medium ${
+              passed={g.passed}
+              label="Bài tập"
+              value={
                 g.passed
-                  ? 'bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-400'
-                  : 'bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-400'
-              }`}
+                  ? `${g.best_pct}%`
+                  : `${g.best_pct}% / ${g.pass_threshold_pct}%`
+              }
               title={g.title}
-            >
-              🔒 Bài tập: {g.passed ? `✓ ${g.best_pct}%` : `${g.best_pct}% / ${g.pass_threshold_pct}%`}
-            </span>
+              locked
+            />
           ))}
         </div>
       </header>
 
       <Tabs defaultValue={defaultTab} className="w-full">
-        <TabsList className="flex w-full flex-wrap">
-          {hasVideo && <TabsTrigger value="video">🎬 Video</TabsTrigger>}
-          {hasPdf && <TabsTrigger value="pdf">📄 Slide PDF</TabsTrigger>}
-          <TabsTrigger value="notes">📖 Ghi chú</TabsTrigger>
-          <TabsTrigger value="notebook">🧪 Notebook</TabsTrigger>
-          {hasAssignment && (
-            <TabsTrigger value="assignment">✅ Bài tập ({assignments.length})</TabsTrigger>
+        <TabsList className="flex h-auto w-full flex-wrap justify-start gap-1 bg-transparent p-0">
+          {hasVideo && (
+            <ToolbarTab value="video" icon={<PlayCircle className="size-3.5" />}>
+              Video
+            </ToolbarTab>
           )}
-          {hasQuiz && <TabsTrigger value="quiz">🎯 Quiz ({quizQuestions.length})</TabsTrigger>}
+          {hasPdf && (
+            <ToolbarTab value="pdf" icon={<FileText className="size-3.5" />}>
+              Slide PDF
+            </ToolbarTab>
+          )}
+          <ToolbarTab value="notes" icon={<ScrollText className="size-3.5" />}>
+            Ghi chú
+          </ToolbarTab>
+          <ToolbarTab value="notebook" icon={<FlaskConical className="size-3.5" />}>
+            Notebook
+          </ToolbarTab>
+          {hasAssignment && (
+            <ToolbarTab value="assignment" icon={<ClipboardCheck className="size-3.5" />}>
+              Bài tập ({assignments.length})
+            </ToolbarTab>
+          )}
+          {hasQuiz && (
+            <ToolbarTab value="quiz" icon={<Target className="size-3.5" />}>
+              Quiz ({quizQuestions.length})
+            </ToolbarTab>
+          )}
         </TabsList>
 
         {hasVideo && (
@@ -209,26 +243,29 @@ export function LessonView({
         )}
       </Tabs>
 
-      <nav className="flex items-center justify-between border-t pt-6">
+      <nav className="flex items-center justify-between gap-4 border-t border-border/60 pt-6">
         {prev ? (
           <Button asChild variant="ghost">
             <Link href={`/courses/${courseSlug}/lessons/${prev.id}`}>
-              <ChevronLeft className="size-4" /> {prev.title}
+              <ChevronLeft className="size-4" />
+              <span className="truncate">{prev.title}</span>
             </Link>
           </Button>
         ) : (
           <div />
         )}
         {next && (
-          <div className="flex flex-col items-end gap-1">
-            <Button asChild={canGoNext} disabled={!canGoNext}>
+          <div className="flex flex-col items-end gap-1.5">
+            <Button asChild={canGoNext} disabled={!canGoNext} size="lg">
               {canGoNext ? (
                 <Link href={`/courses/${courseSlug}/lessons/${next.id}`}>
-                  {next.title} <ChevronRight className="size-4" />
+                  <span className="truncate">{next.title}</span>
+                  <ChevronRight className="size-4" />
                 </Link>
               ) : (
                 <span>
-                  🔒 {next.title} <ChevronRight className="size-4" />
+                  <Lock className="size-4" />
+                  <span className="truncate">{next.title}</span>
                 </span>
               )}
             </Button>
@@ -246,7 +283,67 @@ export function LessonView({
   )
 }
 
-function missingRequirements(needQuiz: boolean, needVideo: boolean, needAssignment: boolean): string {
+function ToolbarTab({
+  value,
+  icon,
+  children,
+}: {
+  value: string
+  icon: React.ReactNode
+  children: React.ReactNode
+}) {
+  return (
+    <TabsTrigger
+      value={value}
+      className="gap-1.5 rounded-md border border-transparent px-3.5 py-1.5 text-sm font-medium text-muted-foreground hover:bg-accent/50 data-[state=active]:border-border/60 data-[state=active]:bg-card data-[state=active]:text-foreground data-[state=active]:shadow-soft"
+    >
+      <span className="text-primary">{icon}</span>
+      {children}
+    </TabsTrigger>
+  )
+}
+
+function RequirementBadge({
+  passed,
+  label,
+  value,
+  title,
+  locked,
+}: {
+  passed: boolean
+  label: string
+  value: string
+  title?: string
+  locked?: boolean
+}) {
+  return (
+    <span
+      title={title}
+      className={cn(
+        'inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium',
+        passed
+          ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
+          : 'border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400',
+      )}
+    >
+      {passed ? (
+        <Check className="size-3" />
+      ) : locked ? (
+        <Lock className="size-3" />
+      ) : (
+        <Target className="size-3" />
+      )}
+      <span className="font-semibold">{label}:</span>
+      <span>{value}</span>
+    </span>
+  )
+}
+
+function missingRequirements(
+  needQuiz: boolean,
+  needVideo: boolean,
+  needAssignment: boolean,
+): string {
   const parts: string[] = []
   if (needQuiz) parts.push('quiz')
   if (needVideo) parts.push('video')
@@ -261,20 +358,27 @@ function FloatingTutor({ lessonId }: { lessonId: string }) {
     <>
       <button
         onClick={() => setOpen((v) => !v)}
-        className="fixed bottom-6 right-6 z-40 flex size-12 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg hover:scale-105"
+        className="fixed bottom-6 right-6 z-40 flex size-12 items-center justify-center rounded-full bg-gradient-to-br from-primary to-primary/70 text-primary-foreground shadow-elevated transition-all hover:scale-105 hover:shadow-glow"
         aria-label="AI Tutor"
       >
-        🤖
+        <Bot className="size-5" />
       </button>
       {open && (
-        <div className="fixed bottom-24 right-6 z-40 h-[500px] w-[380px] overflow-hidden rounded-lg border bg-card shadow-xl">
-          <div className="flex items-center justify-between border-b bg-muted/30 px-4 py-2">
-            <span className="text-sm font-medium">AI Tutor</span>
-            <button onClick={() => setOpen(false)} className="text-sm text-muted-foreground">
-              ✕
+        <div className="fixed bottom-24 right-6 z-40 h-[500px] w-[380px] overflow-hidden rounded-xl border border-border/60 bg-card shadow-elevated">
+          <div className="flex items-center justify-between border-b border-border/60 bg-card px-4 py-2.5">
+            <span className="inline-flex items-center gap-1.5 text-sm font-medium">
+              <Bot className="size-4 text-primary" />
+              AI Tutor
+            </span>
+            <button
+              onClick={() => setOpen(false)}
+              className="inline-flex size-7 items-center justify-center rounded-md text-muted-foreground hover:bg-accent/60 hover:text-foreground"
+              aria-label="Đóng"
+            >
+              <X className="size-4" />
             </button>
           </div>
-          <div className="h-[calc(100%-2.5rem)]">
+          <div className="h-[calc(100%-2.75rem)]">
             <TutorChat sessionId={null} context={{ lessonId }} />
           </div>
         </div>

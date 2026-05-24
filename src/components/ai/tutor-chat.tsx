@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Loader2, Send } from 'lucide-react'
+import { Loader2, Send, Sparkles } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 
@@ -84,12 +84,15 @@ export function TutorChat({ sessionId, context }: TutorChatProps) {
   }
 
   return (
-    <div className="flex h-full flex-col rounded-lg border bg-card">
+    <div className="flex h-full flex-col rounded-xl border border-border/60 bg-card">
       <div ref={scrollRef} className="flex-1 space-y-4 overflow-auto p-4">
         {messages.length === 0 && (
-          <div className="rounded-md bg-muted/30 p-4 text-sm text-muted-foreground">
-            👋 Bắt đầu bằng câu hỏi như: <em>&ldquo;Khác nhau giữa MSE và MAE?&rdquo;</em> hoặc{' '}
-            <em>&ldquo;Tại sao code này bị overfitting?&rdquo;</em>
+          <div className="flex gap-3 rounded-lg border border-border/60 bg-muted/30 p-4 text-sm text-muted-foreground">
+            <Sparkles className="size-4 shrink-0 text-primary" />
+            <div>
+              Bắt đầu bằng câu hỏi như: <em>&ldquo;Khác nhau giữa MSE và MAE?&rdquo;</em> hoặc{' '}
+              <em>&ldquo;Tại sao code này bị overfitting?&rdquo;</em>
+            </div>
           </div>
         )}
         {messages.map((m, i) => (
@@ -97,8 +100,8 @@ export function TutorChat({ sessionId, context }: TutorChatProps) {
             key={i}
             className={
               m.role === 'user'
-                ? 'ml-auto max-w-[80%] rounded-lg bg-primary p-3 text-sm text-primary-foreground'
-                : 'mr-auto max-w-[90%] rounded-lg bg-muted p-3 text-sm'
+                ? 'ml-auto max-w-[80%] rounded-2xl rounded-br-sm bg-primary px-3.5 py-2.5 text-sm leading-relaxed text-primary-foreground shadow-soft'
+                : 'mr-auto max-w-[90%] rounded-2xl rounded-bl-sm border border-border/60 bg-muted/60 px-3.5 py-2.5 text-sm leading-relaxed'
             }
           >
             {m.role === 'user' ? (
@@ -111,7 +114,7 @@ export function TutorChat({ sessionId, context }: TutorChatProps) {
           </div>
         ))}
       </div>
-      <form onSubmit={handleSubmit} className="flex gap-2 border-t p-3">
+      <form onSubmit={handleSubmit} className="flex gap-2 border-t border-border/60 bg-card/50 p-3">
         <Input
           value={input}
           onChange={(e) => setInput(e.target.value)}

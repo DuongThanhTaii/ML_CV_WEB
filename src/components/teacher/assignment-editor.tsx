@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { createBrowserSupabase } from '@/lib/supabase/client'
 import { useToast } from '@/hooks/use-toast'
-import { Loader2 } from 'lucide-react'
+import { Loader2, Lock, ShieldCheck } from 'lucide-react'
 
 interface Props {
   assignment: any
@@ -121,7 +121,10 @@ export function AssignmentEditor({ assignment }: Props) {
       </div>
 
       <div className="space-y-1.5">
-        <Label>Hidden tests (chấm chính thức)</Label>
+        <Label className="inline-flex items-center gap-1.5">
+          <ShieldCheck className="size-3.5 text-primary" />
+          Hidden tests (chấm chính thức)
+        </Label>
         <Textarea
           value={hiddenPlain}
           onChange={(e) => setHiddenPlain(e.target.value)}
@@ -129,7 +132,7 @@ export function AssignmentEditor({ assignment }: Props) {
           className="font-mono text-sm"
           placeholder={
             assignment.hidden_tests_encrypted
-              ? '🔒 Đã có hidden tests được mã hóa. Nhập ở đây để THAY THẾ.'
+              ? 'Đã có hidden tests được mã hóa. Nhập ở đây để THAY THẾ.'
               : 'def test_hidden_1():\n    assert ...'
           }
         />
@@ -188,15 +191,16 @@ export function AssignmentEditor({ assignment }: Props) {
         </label>
       </div>
 
-      <div className="rounded-md border border-amber-300 bg-amber-50 p-3 dark:border-amber-900 dark:bg-amber-950/30">
+      <div className="rounded-md border border-amber-500/30 bg-amber-500/5 p-3.5">
         <label className="flex items-center gap-2 text-sm font-medium">
           <input
             type="checkbox"
             checked={gatesProgression}
             onChange={(e) => setGatesProgression(e.target.checked)}
-            className="size-4"
+            className="size-4 accent-primary"
           />
-          🔒 Bắt buộc pass bài này mới mở khóa bài kế tiếp
+          <Lock className="size-3.5 text-amber-600 dark:text-amber-400" />
+          Bắt buộc pass bài này mới mở khóa bài kế tiếp
         </label>
         {gatesProgression && (
           <div className="mt-3 flex items-end gap-3">

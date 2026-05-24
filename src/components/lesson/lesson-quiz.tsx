@@ -196,8 +196,9 @@ export function LessonQuiz({
         {result ? (
           <div className="flex items-center gap-2">
             {result.passed ? (
-              <span className="text-sm font-medium text-green-600">
-                ✓ Đạt {result.score}% — bài kế đã mở
+              <span className="inline-flex items-center gap-1.5 text-sm font-medium text-emerald-600 dark:text-emerald-400">
+                <CheckCircle2 className="size-4" />
+                Đạt {result.score}% — bài kế đã mở
               </span>
             ) : (
               <Button variant="outline" onClick={handleRetry}>

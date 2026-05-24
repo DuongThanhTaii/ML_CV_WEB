@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { createBrowserSupabase } from '@/lib/supabase/client'
-import { Loader2 } from 'lucide-react'
+import { Check, Loader2 } from 'lucide-react'
 
 export function ResendVerification({ email }: { email: string }) {
   const [status, setStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle')
@@ -31,7 +31,11 @@ export function ResendVerification({ email }: { email: string }) {
   }
 
   if (status === 'sent') {
-    return <span className="text-xs text-emerald-600">✓ Đã gửi lại email xác thực</span>
+    return (
+      <span className="inline-flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400">
+        <Check className="size-3" /> Đã gửi lại email xác thực
+      </span>
+    )
   }
 
   return (
