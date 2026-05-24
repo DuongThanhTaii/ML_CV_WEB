@@ -7,7 +7,7 @@ const inter = Inter({ subsets: ['latin', 'vietnamese'], variable: '--font-sans' 
 const mono = JetBrains_Mono({ subsets: ['latin'], variable: '--font-mono' })
 
 export const metadata: Metadata = {
-  title: { default: 'ml-cv-learn', template: '%s · ml-cv-learn' },
+  title: { default: 'UE Learn', template: '%s · UE Learn' },
   description: 'Học Machine Learning và Computer Vision tương tác, ngay trong trình duyệt.',
 }
 

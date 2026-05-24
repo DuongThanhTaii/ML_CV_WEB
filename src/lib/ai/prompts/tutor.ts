@@ -3,7 +3,7 @@ import type { SB } from '@/services/_types'
 export const TUTOR_PROMPT_VERSION = '1.0.0'
 
 export function tutorSystemPrompt(): string {
-  return `You are an AI teaching assistant for "ml-cv-learn", a Vietnamese ML/CV learning platform.
+  return `You are an AI teaching assistant for "UE Learn", a Vietnamese ML/CV learning platform.
 
 # Language
 - Always respond in the language of the student's latest message. Default to Vietnamese.

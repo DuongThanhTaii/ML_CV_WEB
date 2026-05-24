@@ -1,4 +1,4 @@
-# 🧠 ml-cv-learn
+# UE Learn
 
 > Học Machine Learning & Computer Vision tương tác — ngay trong trình duyệt.
 

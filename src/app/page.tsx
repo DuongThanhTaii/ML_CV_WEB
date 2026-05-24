@@ -22,7 +22,7 @@ export default function LandingPage() {
           <span className="relative flex size-7 items-center justify-center rounded-md bg-gradient-to-br from-primary to-primary/60 text-primary-foreground shadow-soft">
             <Sparkles className="size-3.5" />
           </span>
-          <span className="font-semibold tracking-tight">ml-cv-learn</span>
+          <span className="font-semibold tracking-tight">UE Learn</span>
         </Link>
         <nav className="flex items-center gap-1.5 text-sm">
           <Link

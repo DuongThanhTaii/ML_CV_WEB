@@ -1,4 +1,4 @@
-# Product Requirements Document — ml-cv-learn
+# Product Requirements Document — UE Learn
 
 **Version**: 0.1 (Draft)
 **Owner**: Dương Thành Tài

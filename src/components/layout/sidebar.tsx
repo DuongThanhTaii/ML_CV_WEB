@@ -33,7 +33,7 @@ export function Sidebar() {
           <Sparkles className="size-3.5" />
         </div>
         <div className="flex flex-col leading-tight">
-          <span className="text-sm font-semibold tracking-tight">ml-cv-learn</span>
+          <span className="text-sm font-semibold tracking-tight">UE Learn</span>
           <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
             Học ML trong browser
           </span>
